@@ -2,6 +2,7 @@ import asyncio
 import os
 from dotenv import load_dotenv
 from playwright.async_api import async_playwright
+from notificacion import enviar_notificacion
 
 load_dotenv()
 DOCUMENTO = os.environ["DOCUMENTO"]
@@ -130,6 +131,11 @@ async def main():
                         print("Click realizado. Esperando confirmación...")
                         await asyncio.sleep(5)
                         print("¡Listo! Verificá en el navegador que la reserva quedó confirmada.")
+                        try:
+                            enviar_notificacion(clase)
+                            print(f"Notificación enviada a {os.environ['MAIL_TO']}.")
+                        except Exception as e:
+                            print(f"No se pudo enviar la notificación: {e}")
                         input("Presioná Enter para cerrar el navegador...")
                         await browser.close()
                         return
