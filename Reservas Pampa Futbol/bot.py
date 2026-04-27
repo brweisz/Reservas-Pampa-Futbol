@@ -9,28 +9,36 @@ PASSWORD = os.environ["PASSWORD"]
 
 INTERVALO_SEGUNDOS = 30
 
+SELECTOR_CARDS = ".MuiGrid-item.MuiGrid-grid-xs-12"
+
 
 async def obtener_clases(page):
-    cards = await page.query_selector_all("div.sc-hHLeRK")
+    cards = page.locator(SELECTOR_CARDS)
+    count = await cards.count()
     clases = []
-    for card in cards:
-        nivel_el = await card.query_selector("text.sc-fLlhyt")
-        fecha_el = await card.query_selector("text.sc-cxabCf")
-        sede_el = await card.query_selector("span.sc-iIPllB strong")
-        disp_el = await card.query_selector("text.sc-gicCDI")
-        chip_el = await card.query_selector(".MuiChip-root")
+    for i in range(count):
+        card = cards.nth(i)
 
-        nivel = (await nivel_el.inner_text()).strip() if nivel_el else ""
-        fecha = (await fecha_el.inner_text()).strip() if fecha_el else ""
-        sede = (await sede_el.inner_text()).strip() if sede_el else ""
-        disponibilidad = (await disp_el.inner_text()).strip() if disp_el else ""
+        # "text" es el tag HTML usado por styled-components para labels; no hay
+        # equivalente MUI para nivel, así que se filtra por contenido estable.
+        nivel_el = card.locator("text.sc-fLlhyt").first
+        fecha_el = card.locator("text").filter(has_text="🗓️").first
+        sede_el = card.locator("strong").first
+        disp_el = card.locator("text").filter(has_text="lugar").first
+        chip_el = card.locator(".MuiChip-root").first
+
+        nivel = (await nivel_el.inner_text()).strip() if await nivel_el.count() > 0 else ""
+        fecha = (await fecha_el.inner_text()).strip() if await fecha_el.count() > 0 else ""
+        sede = (await sede_el.inner_text()).strip() if await sede_el.count() > 0 else ""
+        disponibilidad = (await disp_el.inner_text()).strip() if await disp_el.count() > 0 else ""
 
         disponible = False
-        if chip_el:
+        if await chip_el.count() > 0:
             aria_disabled = await chip_el.get_attribute("aria-disabled")
             disponible = aria_disabled != "true"
 
         clases.append({
+            "index": i,
             "nivel": nivel,
             "fecha": fecha,
             "sede": sede,
@@ -54,7 +62,7 @@ async def main():
         await page.click('button[type="submit"]')
 
         try:
-            await page.wait_for_url("**/alumno/**", timeout=10000)
+            await page.wait_for_url("https://www.pampafutbol.com", timeout=10000)
         except Exception:
             print("Error: no se pudo iniciar sesión. Verificá documento y contraseña.")
             await browser.close()
@@ -64,7 +72,7 @@ async def main():
 
         # --- Cargar clases ---
         await page.goto("https://www.pampafutbol.com/alumno/clases-disponibles")
-        await page.wait_for_selector("div.sc-hHLeRK", timeout=15000)
+        await page.wait_for_selector(SELECTOR_CARDS, timeout=15000)
 
         clases = await obtener_clases(page)
 
@@ -103,12 +111,12 @@ async def main():
         while True:
             print(f"[Intento {intento}] Recargando página...")
             await page.reload()
-            await page.wait_for_selector("div.sc-hHLeRK", timeout=15000)
+            await page.wait_for_selector(SELECTOR_CARDS, timeout=15000)
 
             clases = await obtener_clases(page)
 
             encontrada = False
-            for i, clase in enumerate(clases):
+            for clase in clases:
                 if (clase["fecha"] == target_fecha
                         and clase["nivel"] == target_nivel
                         and clase["sede"] == target_sede):
@@ -117,8 +125,7 @@ async def main():
 
                     if clase["disponible"]:
                         print("\n¡Lugar disponible! Haciendo click en 'Recuperar'...")
-                        cards = await page.query_selector_all("div.sc-hHLeRK")
-                        chip = await cards[i].query_selector(".MuiChip-root")
+                        chip = page.locator(SELECTOR_CARDS).nth(clase["index"]).locator(".MuiChip-root").first
                         await chip.click()
                         print("Click realizado. Esperando confirmación...")
                         await asyncio.sleep(5)
