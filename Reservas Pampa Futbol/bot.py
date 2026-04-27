@@ -51,7 +51,7 @@ async def obtener_clases(page):
 
 async def main():
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=False)
+        browser = await p.chromium.launch(headless=True)
         page = await browser.new_page()
 
         # --- Login ---
@@ -130,13 +130,12 @@ async def main():
                         await chip.click()
                         print("Click realizado. Esperando confirmación...")
                         await asyncio.sleep(5)
-                        print("¡Listo! Verificá en el navegador que la reserva quedó confirmada.")
+                        print("¡Listo!")
                         try:
                             enviar_notificacion(clase)
                             print(f"Notificación enviada a {os.environ['MAIL_TO']}.")
                         except Exception as e:
                             print(f"No se pudo enviar la notificación: {e}")
-                        input("Presioná Enter para cerrar el navegador...")
                         await browser.close()
                         return
                     break
