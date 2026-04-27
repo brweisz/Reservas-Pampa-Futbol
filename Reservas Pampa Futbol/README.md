@@ -36,7 +36,11 @@ MAIL_TO=tu@gmail.com
 ```
 
 > **Nota para Gmail:** necesitás una *App Password*, no tu contraseña normal.
-> Generala en [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords) con la verificación en dos pasos activada.
+>
+> 1. Activá la verificación en dos pasos en tu cuenta Google (si no la tenés)
+> 2. Entrá a [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords)
+> 3. Generá una nueva app password (el nombre es libre, ej: "Pampa Bot")
+> 4. Copiá los 16 caracteres generados y pegálos en `MAIL_PASSWORD` (sin espacios)
 
 ## Uso
 
