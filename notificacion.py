@@ -4,19 +4,19 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
 
-def enviar_notificacion(clase: dict):
+def enviar_notificacion(clase: dict, to: str | None = None):
     mail_from = os.environ["MAIL_FROM"]
     mail_password = os.environ["MAIL_PASSWORD"]
-    mail_to = os.environ["MAIL_TO"]
+    mail_to = to or os.environ["MAIL_TO"]
     smtp_host = os.environ.get("SMTP_HOST", "smtp.gmail.com")
     smtp_port = int(os.environ.get("SMTP_PORT", "587"))
 
     cuerpo = (
-        f"Tu clase fue reservada automáticamente.\n\n"
+        f"Tu clase fue reservada automaticamente.\n\n"
         f"Fecha:         {clase['fecha']}\n"
         f"Nivel:         {clase['nivel']}\n"
         f"Sede:          {clase['sede']}\n"
-        f"Ver próximas clases:\n"
+        f"Ver proximas clases:\n"
         f"https://www.pampafutbol.com/alumno/proximas-clases\n"
     )
 
