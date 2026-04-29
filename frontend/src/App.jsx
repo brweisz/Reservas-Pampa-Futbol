@@ -159,7 +159,7 @@ function App() {
                 <div className="class-info">
                   <strong>{c.fecha}</strong>
                   <span>{c.nivel}</span>
-                  <span>{c.sede}</span>
+                  <span>{c.sede}{c.cancha ? ` - ${c.cancha}` : ''}</span>
                   <span className="availability">{c.disponibilidad}</span>
                 </div>
                 <button onClick={() => handleBook(c)} disabled={loading}>
@@ -176,7 +176,7 @@ function App() {
         <div className="status-view">
           <h2>Esperando lugar...</h2>
           <p>
-            <strong>{bookedClass?.fecha}</strong> | {bookedClass?.nivel} | {bookedClass?.sede}
+            <strong>{bookedClass?.fecha}</strong> | {bookedClass?.nivel} | {bookedClass?.sede}{bookedClass?.cancha ? ` - ${bookedClass.cancha}` : ''}
           </p>
           <div className="spinner" />
           <p className="hint">Revisando cada 30 segundos. Recibiras un email cuando se reserve.</p>
@@ -188,7 +188,7 @@ function App() {
         <div className="status-view success">
           <h2>Clase reservada!</h2>
           <p>
-            <strong>{bookedClass?.fecha}</strong> | {bookedClass?.nivel} | {bookedClass?.sede}
+            <strong>{bookedClass?.fecha}</strong> | {bookedClass?.nivel} | {bookedClass?.sede}{bookedClass?.cancha ? ` - ${bookedClass.cancha}` : ''}
           </p>
           <p>Se envio un email de confirmacion.</p>
           <button onClick={() => { setStep('login'); setJobId(null); setClasses([]); setBookedClass(null); }}>

@@ -11,11 +11,13 @@ def enviar_notificacion(clase: dict, to: str | None = None):
     smtp_host = os.environ.get("SMTP_HOST", "smtp.gmail.com")
     smtp_port = int(os.environ.get("SMTP_PORT", "587"))
 
+    cancha = clase.get('cancha', '')
+    sede_cancha = f"{clase['sede']} - {cancha}" if cancha else clase['sede']
     cuerpo = (
         f"Tu clase fue reservada automaticamente.\n\n"
         f"Fecha:         {clase['fecha']}\n"
         f"Nivel:         {clase['nivel']}\n"
-        f"Sede:          {clase['sede']}\n"
+        f"Sede:          {sede_cancha}\n"
         f"Ver proximas clases:\n"
         f"https://www.pampafutbol.com/alumno/proximas-clases\n"
     )

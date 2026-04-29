@@ -22,4 +22,4 @@ except ValueError:
 
 - Pasar deusar chromium a usar fetches? le pregunté cómo hacerlo
 
-- Hay cosas que hay que decirle 87 veces. Las veces que me pasó eso decidí investigar cada vez más manualmente a ver qué estaba pasando para darle instrucciones más específicas.
+- Hay cosas que hay que decirle 87 veces. Las veces que me pasó eso decidí investigar cada vez más manualmente a ver qué estaba pasando para darle instrucciones más específicas. En ese sentido tuve que rollbackear muchas veces, y trabajar con muchos commits es clave.

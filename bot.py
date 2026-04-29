@@ -38,6 +38,13 @@ async def obtener_clases(page: Page) -> list[dict]:
         sede = (await sede_el.inner_text()).strip() if await sede_el.count() > 0 else ""
         disponibilidad = (await disp_el.inner_text()).strip() if await disp_el.count() > 0 else ""
 
+        cancha = ""
+        if await sede_el.count() > 0:
+            location_text = await sede_el.evaluate("el => el.parentElement.innerText")
+            parts = location_text.strip().split("\n- ", 1)
+            if len(parts) > 1:
+                cancha = parts[1].strip()
+
         disponible = False
         if await chip_el.count() > 0:
             aria_disabled = await chip_el.get_attribute("aria-disabled")
@@ -48,6 +55,7 @@ async def obtener_clases(page: Page) -> list[dict]:
             "nivel": nivel,
             "fecha": fecha,
             "sede": sede,
+            "cancha": cancha,
             "disponibilidad": disponibilidad,
             "disponible": disponible,
         })
