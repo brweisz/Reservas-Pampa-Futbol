@@ -4,3 +4,7 @@ Cosas que fui haciendo:
 - Primero app de CLI, después cliente-servidor, después-hostearlo? MONETIZARLO?
 
 - 2 veces le tuve que decir algo y no lo entendia. Problema con el polling cuando ya habia clases disponibles
+
+- Me hice una lista de tareas del estilo inbox para ir diciéndoselas de a una.
+
+- Chequée en detalle lo que estaba en cada paso? No. Me di cuenta que es muy facil no hacerlo, uno se acostumbra a que las cosas se hagan y ya. El problema con eso es que cuando algo falla, la creación de la linea que metió el error puede estar muy lejos en el tiempo respecto a la primera falla. Quizas haya que testear, incluso el frontend, y agregar reglas que hagan que después de cada cambio se corran esos tests. Y revisar los tests manualmente.

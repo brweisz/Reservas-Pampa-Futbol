@@ -18,7 +18,7 @@ load_dotenv()
 class LoginRequest(BaseModel):
     documento: str
     password: str
-    email: EmailStr
+    email: EmailStr | None = None
 
 class BookRequest(BaseModel):
     job_id: str
@@ -126,10 +126,11 @@ async def book_endpoint(req: BookRequest):
         try:
             async def on_success(clase):
                 rec["status"] = "booked"
-                try:
-                    enviar_notificacion(clase, to=rec["email"])
-                except Exception:
-                    pass
+                if rec["email"]:
+                    try:
+                        enviar_notificacion(clase, to=rec["email"])
+                    except Exception:
+                        pass
                 await _cleanup_job(req.job_id)
 
             await bot.poll_and_book(
@@ -141,12 +142,13 @@ async def book_endpoint(req: BookRequest):
             pass
         except Exception:
             rec["status"] = "failed"
-            try:
-                enviar_notificacion(
-                    rec.get("chosen_class", {}),
-                    to=rec["email"],
-                )
-            except Exception:
+            if rec["email"]:
+                try:
+                    enviar_notificacion(
+                        rec.get("chosen_class", {}),
+                        to=rec["email"],
+                    )
+                except Exception:
                 pass
             await _cleanup_job(req.job_id)
 

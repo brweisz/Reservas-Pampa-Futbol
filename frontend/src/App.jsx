@@ -8,6 +8,7 @@ function App() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [wantEmail, setWantEmail] = useState(false)
   const [classes, setClasses] = useState([])
   const [jobId, setJobId] = useState(null)
   const [bookedClass, setBookedClass] = useState(null)
@@ -26,7 +27,7 @@ function App() {
         body: JSON.stringify({
           documento: fd.get('documento'),
           password: fd.get('password'),
-          email: fd.get('email'),
+          email: wantEmail ? fd.get('email') : null,
         }),
       })
       if (!res.ok) {
@@ -138,7 +139,11 @@ function App() {
               {showPassword ? 'Ocultar' : 'Ver'}
             </button>
           </div>
-          <input name="email" type="email" placeholder="Email para notificacion" required />
+          <label className="checkbox-label">
+            <input type="checkbox" checked={wantEmail} onChange={() => setWantEmail(!wantEmail)} />
+            Quiero recibir una notificacion por mail
+          </label>
+          {wantEmail && <input name="email" type="email" placeholder="Email para notificacion" required />}
           <button type="submit" disabled={loading}>
             {loading ? 'Ingresando...' : 'Ingresar'}
           </button>
