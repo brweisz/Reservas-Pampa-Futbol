@@ -32,3 +32,7 @@ When a selector breaks, prefer content-based filters (`.filter(has_text=...)`) o
 ## Configuration
 
 `.env` is loaded by `python-dotenv` at startup. `bot.py` reads `DOCUMENTO` and `PASSWORD` as required (`os.environ[...]` — will KeyError if missing); `notificacion.py` requires `MAIL_FROM`, `MAIL_PASSWORD`, `MAIL_TO`. Gmail requires an App Password, not the account password (see README). The `.env` file is gitignored.
+
+## Rules
+
+Write all the code in english
