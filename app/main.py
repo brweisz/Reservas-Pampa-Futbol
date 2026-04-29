@@ -149,7 +149,7 @@ async def book_endpoint(req: BookRequest):
                         to=rec["email"],
                     )
                 except Exception:
-                pass
+                    pass
             await _cleanup_job(req.job_id)
 
     rec["task"] = asyncio.create_task(_run_poll())

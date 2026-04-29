@@ -9,3 +9,17 @@ Cosas que fui haciendo:
 
 - Chequée en detalle lo que estaba en cada paso? No. Me di cuenta que es muy facil no hacerlo, uno se acostumbra a que las cosas se hagan y ya. El problema con eso es que cuando algo falla, la creación de la linea que metió el error puede estar muy lejos en el tiempo respecto a la primera falla. Quizas haya que testear, incluso el frontend, y agregar reglas que hagan que después de cada cambio se corran esos tests. Y revisar los tests manualmente.
 
+- Le dije que el backend no estaba respondiendo en caso de un login fallido y ¿¿¿AUMENTO EL TIEMPO DE TIMEOUT???
+
+- Lo quiero cagar a trompadas:
+except Exception:
+    pass
+
+Le pregunto si pensaba que estaba bien y lo cambia por
+
+except ValueError:
+    pass
+
+- Pasar deusar chromium a usar fetches? le pregunté cómo hacerlo
+
+- Hay cosas que hay que decirle 87 veces. Las veces que me pasó eso decidí investigar cada vez más manualmente a ver qué estaba pasando para darle instrucciones más específicas.
