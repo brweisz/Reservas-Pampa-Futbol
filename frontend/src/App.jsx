@@ -7,6 +7,7 @@ function App() {
   const [step, setStep] = useState('login') // login | picking | polling | booked | failed
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
   const [classes, setClasses] = useState([])
   const [jobId, setJobId] = useState(null)
   const [bookedClass, setBookedClass] = useState(null)
@@ -131,7 +132,12 @@ function App() {
       {step === 'login' && (
         <form onSubmit={handleLogin} className="form">
           <input name="documento" placeholder="Documento" required />
-          <input name="password" type="password" placeholder="Contrasena" required />
+          <div className="password-field">
+            <input name="password" type={showPassword ? 'text' : 'password'} placeholder="Contrasena" required />
+            <button type="button" className="toggle-password" onClick={() => setShowPassword(!showPassword)}>
+              {showPassword ? 'Ocultar' : 'Ver'}
+            </button>
+          </div>
           <input name="email" type="email" placeholder="Email para notificacion" required />
           <button type="submit" disabled={loading}>
             {loading ? 'Ingresando...' : 'Ingresar'}
