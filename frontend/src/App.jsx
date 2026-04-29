@@ -145,7 +145,7 @@ function App() {
           </label>
           {wantEmail && <input name="email" type="email" placeholder="Email para notificacion" required />}
           <button type="submit" disabled={loading}>
-            {loading ? 'Ingresando...' : 'Ingresar'}
+            {loading ? <><span className="spinner-small" /> Ingresando...</> : 'Ingresar'}
           </button>
         </form>
       )}
