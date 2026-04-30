@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import './App.css'
 
 const API = 'http://localhost:8000'
@@ -7,12 +7,41 @@ function App() {
   const [step, setStep] = useState('login') // login | picking | polling | booked | failed
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [autoLogging, setAutoLogging] = useState(!!sessionStorage.getItem('pampa_credentials'))
   const [showPassword, setShowPassword] = useState(false)
   const [wantEmail, setWantEmail] = useState(false)
   const [classes, setClasses] = useState([])
   const [jobId, setJobId] = useState(null)
   const [bookedClass, setBookedClass] = useState(null)
   const pollRef = useRef(null)
+
+  // --- Auto-login on mount if credentials are saved ---
+  useEffect(() => {
+    const saved = sessionStorage.getItem('pampa_credentials')
+    if (!saved) return
+    let creds
+    try { creds = JSON.parse(saved) } catch { sessionStorage.removeItem('pampa_credentials'); return }
+
+    fetch(`${API}/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(creds),
+    })
+      .then(res => {
+        if (!res.ok) throw new Error()
+        return res.json()
+      })
+      .then(data => {
+        if (creds.email) setWantEmail(true)
+        setJobId(data.job_id)
+        setClasses(data.classes)
+        setStep('picking')
+      })
+      .catch(() => {
+        // credenciales inválidas o servidor caído, mostrar login normal
+      })
+      .finally(() => setAutoLogging(false))
+  }, [])
 
   // --- Login ---
   async function handleLogin(e) {
@@ -35,6 +64,11 @@ function App() {
         throw new Error(data.detail || 'Login failed')
       }
       const data = await res.json()
+      sessionStorage.setItem('pampa_credentials', JSON.stringify({
+        documento: fd.get('documento'),
+        password: fd.get('password'),
+        email: wantEmail ? fd.get('email') : null,
+      }))
       setJobId(data.job_id)
       setClasses(data.classes)
       setStep('picking')
@@ -124,6 +158,17 @@ function App() {
   }
 
   // --- Render ---
+  if (autoLogging) {
+    return (
+      <div className="container">
+        <h1>Pampa Futbol</h1>
+        <div className="status-view">
+          <div className="spinner" />
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="container">
       <h1>Pampa Futbol</h1>
