@@ -1,0 +1,1 @@
+Run all the smoke tests in the project.  

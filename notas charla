@@ -27,3 +27,7 @@ except ValueError:
 - A veces escribo y le pido que me diga una idea antes de codearla.
 
 - Estoy sospechando que por lo menos Sonnet es bastante mala en cosas de seguridad, porque me hace hacer cosas que no creo que sean buenas prácticas en términos de manejo de passwords, y no me sugiere cosas que se que sí lo son.
+
+- Le pido que haga algo con el browser y me dice que no puede abrir un browser, pero tampoco me sugiere usar playwright, incluso cuando le pregunté como podía conocer más sobre el contexto de la página. Me hubiera ahorrado muchos problemas probablemente.
+
+- Le pedi que creara un hook que impidiera que el modelo leyera el .env y LO PRIMERO QUE HIZO FUE READ .ENV, EN OPUS. La seguridad de esto es chotisima
