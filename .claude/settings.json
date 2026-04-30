@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -e --arg root \"$CLAUDE_PROJECT_DIR\" '.tool_input.file_path != ($root + \"/.env\")' >/dev/null || { echo \"Access to .env is blocked by hook\" >&2; exit 2; }"
+          }
+        ]
+      }
+    ]
+  }
+}
