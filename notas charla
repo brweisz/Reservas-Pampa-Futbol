@@ -23,3 +23,7 @@ except ValueError:
 - Pasar deusar chromium a usar fetches? le pregunté cómo hacerlo
 
 - Hay cosas que hay que decirle 87 veces. Las veces que me pasó eso decidí investigar cada vez más manualmente a ver qué estaba pasando para darle instrucciones más específicas. En ese sentido tuve que rollbackear muchas veces, y trabajar con muchos commits es clave.
+
+- A veces escribo y le pido que me diga una idea antes de codearla.
+
+- Estoy sospechando que por lo menos Sonnet es bastante mala en cosas de seguridad, porque me hace hacer cosas que no creo que sean buenas prácticas en términos de manejo de passwords, y no me sugiere cosas que se que sí lo son.
