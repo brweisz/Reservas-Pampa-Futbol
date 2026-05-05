@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node hooks/prevent_claude_from_reading_files.js"
+            "command": "node ./hooks/prevent_claude_from_reading_files.js"
           }
         ]
       },
