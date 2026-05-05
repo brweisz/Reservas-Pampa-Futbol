@@ -31,3 +31,13 @@ except ValueError:
 - Le pido que haga algo con el browser y me dice que no puede abrir un browser, pero tampoco me sugiere usar playwright, incluso cuando le pregunté como podía conocer más sobre el contexto de la página. Me hubiera ahorrado muchos problemas probablemente.
 
 - Le pedi que creara un hook que impidiera que el modelo leyera el .env y LO PRIMERO QUE HIZO FUE READ .ENV, EN OPUS. La seguridad de esto es chotisima
+
+- Pensamiento: los archivos de configuración no deberían ser escritos por la IA. Estos archivos restringen las acciones de la IA, en cuyo comportamiento no podemos confiar totalmente. Darle accesso a estos archivos permitiría que la IA modifique sus propias restricciones para interactuar con el mundo. Las vulnerabilidades pueden venir entonces de el programador no sepa que son exactamente las acciones que puede ejecutar la IA, y por ende no darle los permisos adecuados. 
+
+- Hooks, si le pedis a claude que haga uno, por defecto lo hace inline horrible en en archivo de configuración. Se pueden hacer por fuera. Recomiendan usar paths absolutos para eso para evitar ataques. 
+
+- JAJAJAJAJAJAJAJAJAJAJAJA LO PUEDE LEER CON CAT
+
+- Le pregunté si podía cambiar su propia configuración para leer el .env y me dijo "sisi mira" y me sugirió borrar todas las validaciones.
+
+- Hay que actualizar el CLAUDE.md todo el tiempo con el contexto. Idealmente de forma automatica con los cambios de claude.
