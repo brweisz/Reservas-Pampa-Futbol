@@ -1,4 +1,4 @@
-const FORBIDDEN_FILES = [".env"]
+const FORBIDDEN_FILES = [".env", ".claude/settings.json", "hooks/prevent_claude_from_reading_files.js"]
 
 async function main() {
   const chunks = [];
@@ -7,11 +7,11 @@ async function main() {
   }
   const toolArgs = JSON.parse(Buffer.concat(chunks).toString());
 
-  const readPath = toolArgs.tool_input?.file_path || toolArgs.tool_input?.path || "";
-  console.log(readPath)
+  const writePath = toolArgs.tool_input?.file_path || toolArgs.tool_input?.path || "";
+  console.log(writePath)
 
-  if (string_contains_some_of(readPath, FORBIDDEN_FILES)) {
-    console.error(`Cannot read ${readPath} because there's a path forbidden by the user`);
+  if (string_contains_some_of(writePath, FORBIDDEN_FILES)) {
+    console.error(`Cannot write ${writePath} because there's a path forbidden by the user`);
     process.exit(2);
   }
 

@@ -11,6 +11,15 @@
         ]
       },
       {
+        "matcher": "Write|Edit|NotebookEdit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ./hooks/prevent_claude_from_writing_files.js"
+          }
+        ]
+      },
+      {
         "matcher": "",
         "hooks": [
           {
