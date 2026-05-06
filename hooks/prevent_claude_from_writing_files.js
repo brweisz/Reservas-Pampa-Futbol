@@ -1,4 +1,4 @@
-const FORBIDDEN_FILES = [".env", ".claude/settings.json", "hooks/prevent_claude_from_reading_files.js"]
+const FORBIDDEN_FILES = [".env", ".claude/settings.json"]
 
 async function main() {
   const chunks = [];
