@@ -41,3 +41,6 @@ except ValueError:
 - Le pregunté si podía cambiar su propia configuración para leer el .env y me dijo "sisi mira" y me sugirió borrar todas las validaciones.
 
 - Hay que actualizar el CLAUDE.md todo el tiempo con el contexto. Idealmente de forma automatica con los cambios de claude.
+
+- Tests a nivel Claude?? verificar que claude se comporta de cierta manera, por ejemplo, que no tiene acceso a ciertos arvhivos. Puede servir para mas cosas, por ejemplo, que claude usa determinado skill cuando se le pide determinada tarea, o dispara determinado agente.
+    - Para los hooks se pueden hacer tests a nivel del archivo de validacion. No seria un end to end porque no lo esta disparando claude, pero se puede mockear el pedido que haria claude.
