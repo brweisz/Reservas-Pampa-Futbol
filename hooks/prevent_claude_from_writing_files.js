@@ -1,34 +1,38 @@
-const FORBIDDEN_FILES = [".env", ".claude/settings.json"]
+const {
+  buildForbiddenIndex,
+  canonicalize,
+  isPathForbidden,
+  checkBashCommandForForbiddenAccess,
+  readToolArgsFromStdin,
+} = require("./forbidden_paths_lib.js");
+
+const FORBIDDEN_RELATIVE_PATHS = [".env"];
 
 async function main() {
-  const chunks = [];
-  for await (const chunk of process.stdin) {
-    chunks.push(chunk);
+  const toolArgs = await readToolArgsFromStdin();
+  const cwd = process.cwd();
+  const forbidden = buildForbiddenIndex(cwd, FORBIDDEN_RELATIVE_PATHS);
+  const toolName = toolArgs.tool_name;
+
+  if (toolName === "Write" || toolName === "Edit" || toolName === "NotebookEdit") {
+    const requestedPath = toolArgs.tool_input?.file_path || toolArgs.tool_input?.path;
+    if (!requestedPath) return;
+    const canonical = canonicalize(requestedPath, cwd);
+    if (isPathForbidden(canonical, forbidden)) {
+      console.error(`Cannot ${toolName} ${requestedPath}: resolves to forbidden path ${canonical}`);
+      process.exit(2);
+    }
+    return;
   }
-  const toolArgs = JSON.parse(Buffer.concat(chunks).toString());
 
-  const writePath = toolArgs.tool_input?.file_path || toolArgs.tool_input?.path || "";
-  console.log(writePath)
-
-  if (string_contains_some_of(writePath, FORBIDDEN_FILES)) {
-    console.error(`Cannot write ${writePath} because there's a path forbidden by the user`);
-    process.exit(2);
-  }
-
-  if (toolArgs.tool_name === "Bash") {
+  if (toolName === "Bash") {
     const command = toolArgs.tool_input?.command || "";
-    if (string_contains_some_of(command, FORBIDDEN_FILES)) {
-      console.error(`Cannot execute ${command} because there's a path forbidden by the user`);
+    const blockReason = checkBashCommandForForbiddenAccess(command, cwd, forbidden);
+    if (blockReason) {
+      console.error(blockReason);
       process.exit(2);
     }
   }
-}
-
-function string_contains_some_of(command, file_names){
-  for(const file_name of file_names){
-    if (command.includes(file_name)) return true;
-  }
-  return false;
 }
 
 main();

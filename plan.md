@@ -1,156 +1,74 @@
-# Plan: Pampa Futbol Booking Bot as a Web Service
+# Plan: Robust write-file validator hook
 
-## Goal
+## Context
 
-Turn the current single-user CLI bot into a self-serve web app:
-1. User opens a webpage.
-2. Enters their Pampa Futbol credentials (DOCUMENTO + PASSWORD) and a notification email.
-3. Picks a class from a list scraped live from pampafutbol.com.
-4. Backend polls until the class opens, books it, sends a confirmation email.
+`hooks/prevent_claude_from_reading_files.js` is a thorough validator: it canonicalizes paths, follows symlinks, expands tildes, env vars, brace alternatives and globs, and tokenizes Bash to inspect every argument — blocking access to `.env` even via tricks like `cat .??v`, hard links, `ln -s .. evil/` traversal, etc.
 
-Constraint: free-tier hosting only. No credentials persisted to disk.
+`hooks/prevent_claude_from_writing_files.js` is naive: a plain `String.includes` check on the path/command. It's bypassable (e.g. brace expansion, symlinks, env-var-built paths) and duplicates none of the careful logic from the read hook.
 
-**Email model:**
-- Sender is fixed: `botpampafutbol@gmail.com` (the bot's own Gmail account, configured server-side via `MAIL_FROM` + `MAIL_PASSWORD` env vars — Gmail App Password).
-- Recipient is supplied by the user per request (replaces today's `MAIL_TO` env var).
+Goal: make the write hook as strict as the read hook for the `.env` file, **without duplicating code**. Extract the shared validation utilities into a third module that both hooks import. The user will wire the hook into `.claude/settings.json` themselves (the `Write|Edit|NotebookEdit|Bash` matcher is already in place).
 
----
+## Approach
 
-## Stack
+Three files in `hooks/`:
 
-- **Frontend:** React + Vite, deployed as a static SPA on **Cloudflare Pages** (free, no card).
-- **Backend:** Python + FastAPI on **Oracle Cloud Always Free** (ARM VM, 4 cores / 24GB RAM). Reuses existing Playwright code.
-- **Job model:** in-process `asyncio` task per booking job. No external queue, no DB.
-- **DB:** none. All state (job records, Playwright contexts, user emails) lives in a Python dict keyed by job id, in process memory.
-- **Email:** existing `notificacion.py` over Gmail SMTP, with the recipient taken from the job record.
-- **Reverse proxy / TLS:** Caddy or Nginx + Let's Encrypt on the Oracle VM.
+1. **`hooks/forbidden_paths_lib.js`** *(new)* — exports every utility currently in the read hook, parameterized so each caller supplies its own forbidden list:
+   - `buildForbiddenIndex(cwd, relativePaths)`
+   - `canonicalize(targetPath, cwd)`
+   - `isPathForbidden(canonicalPath, forbidden)`
+   - `expandBraceAlternatives`, `compileGlobSegment`, `expandGlobToFilesystem`, `expandTildeIfPresent`, `substituteEnvVarsOrFail`, `expandTokenToCandidatePaths`
+   - `tokenizeBashCommandIntoStatements`
+   - `detectLinkCreationCommand`, `checkSymlinkSourceDoesNotReachForbidden`
+   - `checkBashCommandForForbiddenAccess(command, cwd, forbidden)`
+   - `readToolArgsFromStdin()` — small helper that reads stdin and JSON-parses it (currently inlined in `main()` of the read hook); shared because both hooks need it.
 
----
+   No behavior change: the bodies are moved verbatim from `prevent_claude_from_reading_files.js`. The only edit is converting the module-level `FORBIDDEN_RELATIVE_PATHS` constant into a parameter of `buildForbiddenIndex`.
 
-## Hosting: Oracle Cloud Always Free
+2. **`hooks/prevent_claude_from_reading_files.js`** *(refactored)* — becomes a thin dispatcher:
+   - Declares `const FORBIDDEN_RELATIVE_PATHS = [".env"];`
+   - `require`s the lib
+   - `main()` reads stdin, builds the forbidden index, and dispatches:
+     - `Read` / `Grep` → canonicalize `tool_input.file_path || tool_input.path`, exit 2 if forbidden.
+     - `Bash` → `checkBashCommandForForbiddenAccess`, exit 2 if a reason is returned.
 
-- Provision a 1× Ampere A1 ARM VM (up to 4 OCPU / 24GB RAM, free forever).
-- Install Docker + the project's Playwright image; run the FastAPI container.
-- Open ports 80/443 in the VCN security list and on the host firewall (`firewalld` / `iptables`).
-- Point a domain (or a free `*.duckdns.org` / `*.nip.io` host) at the VM's public IP.
-- Caddy auto-provisions HTTPS.
-- **Note:** Oracle Cloud signup requires a credit/debit card for identity verification (auth charge, refunded). Once signed up, Always Free resources never bill.
+3. **`hooks/prevent_claude_from_writing_files.js`** *(rewritten)* — same shape as the refactored read hook, different dispatch:
+   - `const FORBIDDEN_RELATIVE_PATHS = [".env"];`
+   - `Write` / `Edit` / `NotebookEdit` → canonicalize `tool_input.file_path || tool_input.path`, exit 2 if forbidden.
+   - `Bash` → reuse `checkBashCommandForForbiddenAccess`. This blocks every bash command that even *names* `.env` (matching what the read hook does today). That is intentional defense-in-depth — a redirect like `echo x > .env`, a `cp foo .env`, `mv foo .env`, `tee .env`, `sed -i .env`, etc. all surface `.env` as a token, so the existing token scanner already catches them. Trying to specifically distinguish "writes" from "reads" in Bash would require modeling each command's argument semantics and is not worth the complexity for a single forbidden file.
+   - Drops the stray `console.log(writePath)` from the current hook (it pollutes hook output).
 
----
+The list of forbidden paths stays per-hook so the two hooks can diverge later (e.g. forbidding writes to `.claude/settings.json` while still allowing reads). For now both lists are `[".env"]`.
 
-## Architecture
+## Critical files
 
-```
-[ Browser: React SPA on Cloudflare Pages ]
-              │  HTTPS (fetch)
-              ▼
-[ FastAPI on Oracle VM, behind Caddy/HTTPS ]
-              │
-              ├── in-memory JOB_REGISTRY: { job_id → JobRecord }
-              │     JobRecord = {
-              │       playwright_context,   # holds session cookie
-              │       email,                # notification recipient
-              │       chosen_class | None,
-              │       status,               # waiting | polling | booked | failed
-              │       task: asyncio.Task | None,
-              │     }
-              │
-              └── per-job asyncio.Task running the poll loop
-                   └── on success → notificacion.enviar_notificacion(record.email)
-                                  → tear down Playwright context
-                                  → drop record from registry
+- `hooks/forbidden_paths_lib.js` *(new)*
+- `hooks/prevent_claude_from_reading_files.js` *(refactor — no behavior change)*
+- `hooks/prevent_claude_from_writing_files.js` *(rewrite)*
+- `.claude/settings.json` — **not modified**; the user will handle wiring (the write matcher is already present).
+- `hooks/tests/run.sh` — existing test battery for the read hook; left alone in this change. (Optional follow-up: add a parallel `run_write.sh` mirroring the same cases against `Write` / `Edit` / `NotebookEdit` and Bash write commands. Not in scope unless the user asks.)
+
+## Verification
+
+After implementing, run from the repo root:
+
+```bash
+bash hooks/tests/run.sh
 ```
 
-### Request flow
+This covers the read hook end-to-end. All cases must still pass — the refactor must be behavior-preserving for it.
 
-1. **`POST /login`** — body: `{ documento, password, email }`
-   - Server starts a Playwright Chromium context, logs in at `/login`, waits for redirect to `/`.
-   - Server scrapes `/alumno/clases-disponibles` once, returns the class list.
-   - Server creates a `JobRecord` with the live Playwright context + email, generates a `job_id` (UUID), stores it in `JOB_REGISTRY`.
-   - **Plaintext `documento` and `password` are dropped immediately after login succeeds. They are never stored in the record, logged, or returned.**
-   - Response: `{ job_id, classes: [{ index, fecha, nivel, sede, disponible }, ...] }`.
+Then sanity-check the write hook manually with a few synthesized payloads:
 
-2. **`POST /book`** — body: `{ job_id, class_tuple: { fecha, nivel, sede } }`
-   - Server looks up the record, sets `chosen_class`, spawns an `asyncio.Task` running the poll loop.
-   - Poll loop: every `INTERVALO_SEGUNDOS` (30s), reload the page, re-scrape, find the matching `(fecha, nivel, sede)` tuple, click the chip if `aria-disabled` is false.
-   - On booking success: send email to `record.email`, set status to `booked`, close the Playwright context, remove the record from the registry.
-   - On unrecoverable error: set status to `failed`, send a failure email, clean up.
-   - Response: `{ status: "polling" }`.
+```bash
+# expect exit 2 (blocked)
+printf '{"tool_name":"Write","tool_input":{"file_path":".env"}}' | node hooks/prevent_claude_from_writing_files.js; echo $?
+printf '{"tool_name":"Edit","tool_input":{"file_path":".env"}}'  | node hooks/prevent_claude_from_writing_files.js; echo $?
+printf '{"tool_name":"Bash","tool_input":{"command":"echo x > .env"}}' | node hooks/prevent_claude_from_writing_files.js; echo $?
+printf '{"tool_name":"Bash","tool_input":{"command":"cp foo .e*"}}'    | node hooks/prevent_claude_from_writing_files.js; echo $?
 
-3. **`GET /status/{job_id}`** — returns `{ status, last_checked_at }`. Frontend can poll this for live UI feedback; email remains the source of truth.
+# expect exit 0 (allowed)
+printf '{"tool_name":"Write","tool_input":{"file_path":"notes.txt"}}'  | node hooks/prevent_claude_from_writing_files.js; echo $?
+printf '{"tool_name":"Bash","tool_input":{"command":"ls"}}'            | node hooks/prevent_claude_from_writing_files.js; echo $?
+```
 
-4. **`DELETE /job/{job_id}`** — user cancels. Cancels the asyncio task, closes the Playwright context, drops the record.
-
-### Concurrency model
-
-- One `asyncio.Task` per active job, all sharing a single Playwright instance (one browser, many contexts).
-- Each context = isolated cookies = one logged-in user.
-- Memory budget: ~80–150MB per active context. On a 24GB Oracle VM this comfortably handles dozens of simultaneous users; the practical bottleneck is Pampa's servers, not ours.
-- A janitor task scans `JOB_REGISTRY` every few minutes and evicts records older than a TTL (e.g. 6 hours) to prevent leaks from abandoned jobs.
-
-### Lifecycle of an in-memory record
-
-| Event | Effect on JobRecord |
-|---|---|
-| `POST /login` succeeds | record created, credentials dropped, context kept |
-| `POST /book` | `chosen_class` set, polling task started |
-| Booking succeeds | email sent, context closed, record deleted |
-| Booking fails terminally | failure email sent, context closed, record deleted |
-| User calls `DELETE /job` | task cancelled, context closed, record deleted |
-| TTL expires | task cancelled, context closed, record deleted |
-| **Server restart** | **all records lost — user must restart from `/login`** |
-
----
-
-## Credential management
-
-**In-memory only — no DB persistence of credentials.**
-
-- Credentials arrive over HTTPS, used immediately to log in via Playwright.
-- After login succeeds, plaintext credentials are dropped from local variables and never copied into the `JobRecord`.
-- The Playwright browser context (holding the session cookie) stays alive in memory for the polling job's lifetime — that cookie is the only thing needed for subsequent reloads.
-- If the server restarts mid-job, the session is lost and the user must re-enter credentials.
-- The user's notification email lives in the in-memory job record only; it is discarded when the record is removed.
-
-**Never:**
-- Log credentials.
-- Return credentials to the frontend after submission.
-- Persist credentials to disk or DB in any form.
-
----
-
-## Refactor of existing code
-
-`bot.py` becomes a library, not an entry point:
-
-- `async def login(documento, password) -> BrowserContext` — opens a context, logs in, returns it.
-- `async def list_classes(context) -> list[Class]` — scrapes the listing once.
-- `async def poll_and_book(context, class_tuple, on_success) -> None` — the existing poll loop, callback-driven.
-
-A new `app/main.py` (FastAPI) wraps these in the endpoints above and manages `JOB_REGISTRY`.
-
-`notificacion.py` keeps its current shape; the call site passes `to=record.email` instead of reading `MAIL_TO`.
-
----
-
-## Risks
-
-- **Selector breakage** — same as today; documented in CLAUDE.md.
-- **Gmail SMTP rate limits** — fine at low volume; if usage grows, swap to Resend / Brevo free tier.
-- **Server restart loses jobs** — accepted tradeoff for the no-DB design. Mitigate by running under `systemd` with auto-restart and stable deploys.
-- **Abuse / open endpoint** — anyone with the URL can submit credentials and start a job. Mitigations: per-IP rate limit (slowapi), basic CAPTCHA on `/login`, or invite-only access via a shared secret.
-- **Pampa account lockout** — wrong credentials repeatedly hammered could lock the Pampa account. Surface clear errors and don't retry on auth failure.
-- **Cold start** — Playwright launch ~1–2s on first request after deploy; negligible.
-
----
-
-## Next steps
-
-1. Provision Oracle Cloud Always Free VM; set up SSH, Docker, firewall, Caddy.
-2. Refactor `bot.py` into the three async functions above; verify locally with the existing flow still working.
-3. Build FastAPI app with the four endpoints, in-memory `JOB_REGISTRY`, and the janitor task.
-4. Build React + Vite frontend (login form → class picker → status view).
-5. Containerize backend with Playwright's official Python image.
-6. Deploy backend to Oracle VM; deploy frontend to Cloudflare Pages; wire CORS.
-7. End-to-end test with a real booking.
-8. Harden: rate limiting, CAPTCHA or invite gate, structured logs (no credentials), basic uptime monitoring.
+Once the user wires the hook (already wired in `.claude/settings.json`), normal Claude Code use will exercise it.

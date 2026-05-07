@@ -48,3 +48,7 @@ except ValueError:
 - Trabajando en que Claude no puede overreidear sus propias configuraciones ni leer el .env, me encontre con que no alcanza con lo que estaba haciendo porque podia bypasearlo con Globs o con symlinks. Cada una de estas tiene solucion (expandir los Globs dentro del chequeo, resolver los symlinks y comparar) pero es un rabbit hole muy grande. Lo bueno de esto es que se puede testear.
 
 - Conviene hacer que los tests los haga un agente o el mismo contexto que escribio el codigo?
+
+----------------
+
+Skill para la creación de hooks: yo toco el settings.json, claude escribe el codigo javascript
